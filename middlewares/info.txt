@@ -1,0 +1,48 @@
+```
+MIDDLEWARE FLOW DIAGRAM
+=======================
+
+Request Flow:
+/instagram → [Middleware 1] → [Middleware 2] → Response
+
+Detailed Flow:
+┌─────────────┐    ┌─────────────────────┐    ┌─────────────────────┐    ┌──────────────────┐
+│ /instagram  │───▶│   check if user     │───▶│   check if user     │───▶│  res.send        │
+│   request   │    │   is logged in      │    │   is admin          │    │  ("hitesh")      │
+└─────────────┘    └─────────────────────┘    └─────────────────────┘    └──────────────────┘
+                            │                           │                          │
+                            │                           │                          │
+                   (err, req, res, next)       (err, req, res, next)       (err, req, res, next)
+
+Alternative ASCII Flow:
+======================
+
+/instagram
+    |
+    v
+┌───────────────────────┐
+│  Middleware 1         │
+│  check if user        │
+│  is logged in         │
+└───────────────────────┘
+    |
+    v
+┌───────────────────────┐
+│  Middleware 2         │
+│  check if user        │
+│  is admin             │
+└───────────────────────┘
+    |
+    v
+┌───────────────────────┐
+│  Response             │
+│  res.send("hitesh")   │
+└───────────────────────┘
+
+Simple Text Version:
+===================
+/instagram → check logged in → check admin → send response
+
+Parameters passed through each middleware:
+(err, req, res, next)
+```
