@@ -1,6 +1,6 @@
 const asyncHandler = (requestHandler) => {
     // this is another function just inside the parent function
-    (req, res, next) => {
+    return (req, res, next) => {
         Promise.resolve(() => {
             requestHandler(req, res, next) // if all good simply call the passed function
         }).catch((err) => {
