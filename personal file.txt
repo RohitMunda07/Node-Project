@@ -1,0 +1,6 @@
+p1524674 -> PAknZXAHBrAbhSEx
+
+mongosh "mongodb+srv://rohityoutube.iu8yrx0.mongodb.net/" --apiVersion 1 --username p1524674 --password PAknZXAHBrAbhSEx
+
+
+.env - MONGODB_URI = mongodb+srv://p1524674:PAknZXAHBrAbhSEx@rohityoutube.iu8yrx0.mongodb.net/?retryWrites=true&w=majority&appName=RohitYoutube

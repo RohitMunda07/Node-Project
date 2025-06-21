@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from 'jsonwebtoken'
-import bcript from 'bcrypt'
+import bcrypt from 'bcrypt'
 
 const userSchema = new Schema({
     userName: {
@@ -47,16 +47,16 @@ const userSchema = new Schema({
 
 
 userSchema.pre("save", async function (next) {
-    if (!isModified('password')) return next()
+    if (!this.isModified('password')) return next()
 
-    this.password = await bcript.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
 // we also need to check the password
 // it will take time to compare the password so we need to use async await
 userSchema.methods.isPasswordCorrect = async function (password) {
-    return await bcript.compare(password, this.password)
+    return await bcrypt.compare(password, this.password)
 }
 
 // generating Access Token and Refresh Token

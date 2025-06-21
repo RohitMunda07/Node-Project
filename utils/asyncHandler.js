@@ -1,9 +1,7 @@
 const asyncHandler = (requestHandler) => {
     // this is another function just inside the parent function
     return (req, res, next) => {
-        Promise.resolve(() => {
-            requestHandler(req, res, next) // if all good simply call the passed function
-        }).catch((err) => {
+        Promise.resolve(requestHandler(req, res, next)).catch((err) => {
             next(err) // raising a flag for rejected promise
         })
     }
@@ -11,17 +9,6 @@ const asyncHandler = (requestHandler) => {
 
 
 export { asyncHandler }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
