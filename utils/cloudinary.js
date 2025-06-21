@@ -16,6 +16,11 @@ const uploadOnCloudinary = async (localFilePath) => {
         })
 
         console.log("File uploaded: ", response.url);
+        // unlink files after upload to cloudinary
+        fs.unlinkSync(localFilePath)
+        console.log("File Unliked");
+        console.log("Cloudinary Response: ", response);
+        
         return response;
 
     } catch (error) {

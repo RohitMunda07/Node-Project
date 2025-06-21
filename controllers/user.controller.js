@@ -3,6 +3,24 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
+import fs from 'fs'
+
+// it is a internal function we don't need to use ascyncHandle(used for server communication)
+const generateAccessTokenAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+        const accessToken = await user.generateAccessToken();
+        const refreshToken = await user.generateRefreshToken();
+
+        // assigning refresh token in database
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false }) // inOrder to avoid required fields like password
+
+        return { accessToken, refreshToken }
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating refresh and access token")
+    }
+}
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -14,6 +32,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // 1. get user details from frontend
     const { userName, email, fullName, password } = req.body;
     console.log("Post datas: ", userName, email, fullName, password);
+    console.log("req.body: ", req.body);
 
     if (!userName || !email || !fullName || !password) {
         throw new ApiError(400, "All fields are required");
@@ -44,7 +63,12 @@ const registerUser = asyncHandler(async (req, res) => {
     // since we are using multer it provides us extra method like files
     // use the name as mentioned on user.router.js since multer is injected there
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+    console.log("req.files: ", req.files);
     // check for avatar image
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -87,6 +111,40 @@ const registerUser = asyncHandler(async (req, res) => {
         new ApiResponse(200, userCreated, "User Registered SuccessFully")
     )
 
+})
+
+const loginUser = asyncHandler(async (req, res) => {
+
+    // username or email based login
+
+    // access and refresh token
+    // send cookie
+
+    // 1. req body -> data
+    const { userName, email, password } = req.body;
+    if (!userName || !email) {
+        throw new ApiError(401, "username or email is required!!")
+    }
+
+    // 2. find the user on database
+    const user = await User.findOne({
+        $or: [{ userName }, { email }]
+    })
+    // if user not found on database
+    if (!user) {
+        throw new ApiError(400, "User not found")
+    }
+
+    // 3. password check
+    const isPasswordValid = await user.isPasswordCorrect(password)
+    if (!isPasswordValid) {
+        throw new ApiError(400, "Password is invalid")
+    }
+
+    const { accessToken, refreshToken } = generateAccessTokenAndRefreshToken(user._id)
+
+    // updating the user with token except unwanted fields like password and refreshToken
+    const LoggedInUser = User.findById(user._id).select("-password -refreshToken")
 })
 
 export { registerUser }
@@ -146,7 +204,7 @@ export { registerUser }
 
 //   // 4. Check and extract file paths
 //   const avatarPath = req.files?.avatar?.[0]?.path;
-//   const coverImagePath = req.files?.coverImage?.[0]?.path;
+//   const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
 //   if (!avatarPath) {
 //     throw new ApiError(400, "Avatar file is required");
@@ -156,7 +214,7 @@ export { registerUser }
 //   let avatarRes, coverRes;
 //   try {
 //     avatarRes = await uploadOnCloudinary(avatarPath);
-//     coverRes = coverImagePath ? await uploadOnCloudinary(coverImagePath) : null;
+//     coverRes = coverImageLocalPath ? await uploadOnCloudinary(coverImageLocalPath) : null;
 //   } catch (error) {
 //     throw new ApiError(500, `Cloudinary Upload Failed: ${error.message}`);
 //   }

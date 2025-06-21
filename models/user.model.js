@@ -45,7 +45,7 @@ const userSchema = new Schema({
 
 }, { timestamp: true })
 
-
+// user method not the mongoose method
 userSchema.pre("save", async function (next) {
     if (!this.isModified('password')) return next()
 
@@ -55,11 +55,13 @@ userSchema.pre("save", async function (next) {
 
 // we also need to check the password
 // it will take time to compare the password so we need to use async await
+// user method not the mongoose method
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password)
 }
 
 // generating Access Token and Refresh Token
+// user method not the mongoose method
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
@@ -75,6 +77,7 @@ userSchema.methods.generateAccessToken = function () {
     )
 }
 
+// user method not the mongoose method
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
