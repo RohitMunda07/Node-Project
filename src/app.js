@@ -13,18 +13,11 @@ app.use(cors({
     credentials: true
 }))
 
-app.use("/api/v1/users", userRouter)
-// working -> http://localhost3000/api/v1/users/register
-
 // configuration for accepting json file
-// app.use(express.json({limit: '20kb'}))
+app.use(express.json({limit: '20kb'}))
 
 // // configuration for URL
-// app.use(express.urlencoded({extended: true, limit: "16"}))
-
-// Keep these but make sure multer is BEFORE any json parsing on form-data routes
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({extended: true, limit: "16"}))
 
 
 // configuration for public assets to store files like avtar, pdf etc on our own server
@@ -32,6 +25,9 @@ app.use(express.static("public"))
 
 // confuguration for cookies
 app.use(cookieParser())
+
+app.use("/api/v1/users", userRouter)
+// working -> http://localhost3000/api/v1/users/register
 
 // ✅ Error handler for multer
 // app.use((err, req, res, next) => {

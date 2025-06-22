@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { registerUser } from "../controllers/user.controller.js";
+import { loginUser, logOutUser, registerUser, refreshAccessToken } from "../controllers/user.controller.js";
 import { upload } from '../middlewares/multer.middleware.js'
+import { jwtVerify } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -17,6 +18,13 @@ router.route("/register").post(
     registerUser
 )
 
+router.route("/login").post(loginUser)
+
+// secure routes
+router.route('/logout').post(jwtVerify, logOutUser)
+router.route('/refresh-token').post(refreshAccessToken)
+
+// debug code
 router.post('/debug', upload.any(), (req, res) => {
     console.log("DEBUG BODY:", req.body);
     console.log("DEBUG FILES:", req.files);
