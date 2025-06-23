@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken'
 import fs from 'fs'
 import { upload } from '../middlewares/multer.middleware.js';
 import { channel, subscribe } from 'diagnostics_channel';
+import mongoose from 'mongoose';
 
 // it is a internal function we don't need to use ascyncHandle(used for server communication)
 const generateAccessTokenAndRefreshToken = async (userId) => {
@@ -379,9 +380,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 // getting user's channel profile
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-    const { userName } = req.params // this is the url
+    const { username } = req.params // this is the url
 
-    if (!userName?.trim()) {
+    if (!username?.trim()) {
         throw new ApiError(400, "Username not found")
     }
 
@@ -389,7 +390,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     const channel = await User.aggregate([
         {
             $match: {
-                userName: userName?.toLowerCase()
+                userName: username?.toLowerCase()
             }
         },
         {
@@ -418,6 +419,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 },
                 isSubscribed: {
                     $cond: {
+                        // Is the current user has subscribed or not 
                         if: { $in: [req.user?._id, "subscribers.subscriber"] },
                         then: true,
                         else: false
@@ -446,12 +448,73 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     }
 
     return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                channel[0], // always return the first value of aggregation
+                "Channel fetch SuccessFull"
+            )
+        )
+})
+
+// getting watch history
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                // we need to use mongoos to typecast the string user._id to mongoDB valid id
+                _id: new mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            // At this point I'm under user document
+            $lookup: {
+                from: "videos", // mongoDB stores the name in lowerCase and adds 's' at last of document name
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    // At this point I'm under video document
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner", // since we have plenty of filed inside this owner(all fields of user)
+                            pipeline: [
+                                // these data have been stored under owner field
+                                {
+                                    $project: {
+                                        avatar: 1,
+                                        userName: 1,
+                                        fullName: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            // using owner name will overwrite the existing field
+                            owner: {
+                                $first: "$owner", // at this line we are returning the object to front-end
+                                // $arrayEleAt: ["$owner", 0] // alternat method
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+
+    return res
     .status(200)
     .json(
         new ApiResponse(
             200,
-            channel[0],
-            "Channel fetch SuccessFull"
+            user[0].watchHistory,
+            "Watch history fetched successfully"
         )
     )
 })
@@ -467,7 +530,8 @@ export {
     updateAccoutDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getUserWatchHistory
 }
 
 

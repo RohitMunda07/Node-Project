@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { loginUser, logOutUser, registerUser, refreshAccessToken, updateUserAvatar, updateUserCoverImage } from "../controllers/user.controller.js";
+import { loginUser, logOutUser, registerUser, refreshAccessToken, updateUserAvatar, updateUserCoverImage, changeCurrentPassword, getCurrentUser, updateAccoutDetails, getUserChannelProfile, getUserWatchHistory } from "../controllers/user.controller.js";
 import { upload } from '../middlewares/multer.middleware.js'
 import { jwtVerify } from "../middlewares/auth.middleware.js";
+import { JsonWebTokenError } from "jsonwebtoken";
 
 const router = Router();
 
@@ -23,16 +24,21 @@ router.route("/login").post(loginUser)
 // secure routes
 router.route('/logout').post(jwtVerify, logOutUser)
 router.route('/refresh-token').post(refreshAccessToken)
+router.route('/change-password').post(jwtVerify, changeCurrentPassword)
+router.route('/current-user').get(jwtVerify, getCurrentUser)
+router.route('/update-account').patch(jwtVerify, updateAccoutDetails)
 router.route('/avatar').patch(
     jwtVerify, // jwtVerify checks if the incoming request has a valid JWT (usually in cookies or headers).
     upload.single('avatar'), // handles single file with fieldname 'avatar'
     updateUserAvatar
 )
-router.route('/coverImage').patch(
+router.route('/cover-image').patch(
     jwtVerify, // jwtVerify is essential for securing routes and making sure only logged-in users can perform certain actions.
     upload.single('coverImage'), // handles single file with fieldname 'coverImage'
     updateUserCoverImage
 )
+router.route('/c/:username').get(jwtVerify, getUserChannelProfile) // since we are retriving the data from url
+router.route('/watch-history').get(jwtVerify, getUserWatchHistory)
 
 // debug code
 router.post('/debug', upload.any(), (req, res) => {
