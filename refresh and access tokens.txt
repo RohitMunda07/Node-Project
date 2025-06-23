@@ -1,0 +1,10 @@
+what is the perpose of Access Token and Refresh Token?
+
+-> It prevents user to add his login credential again and again
+-> Access Token is short term
+-> Refresh Token is long term
+
+if Access Token expires then simply hit an endPoint to refresh tokne and re-enable your Access Token
+
+Refresh Token is stored in database and also we can request this token and it's done by front-end
+so we need to give him an endPoint 

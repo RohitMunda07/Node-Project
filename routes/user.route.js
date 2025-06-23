@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logOutUser, registerUser, refreshAccessToken } from "../controllers/user.controller.js";
+import { loginUser, logOutUser, registerUser, refreshAccessToken, updateUserAvatar, updateUserCoverImage } from "../controllers/user.controller.js";
 import { upload } from '../middlewares/multer.middleware.js'
 import { jwtVerify } from "../middlewares/auth.middleware.js";
 
@@ -23,6 +23,16 @@ router.route("/login").post(loginUser)
 // secure routes
 router.route('/logout').post(jwtVerify, logOutUser)
 router.route('/refresh-token').post(refreshAccessToken)
+router.route('/avatar').patch(
+    jwtVerify, // jwtVerify checks if the incoming request has a valid JWT (usually in cookies or headers).
+    upload.single('avatar'), // handles single file with fieldname 'avatar'
+    updateUserAvatar
+)
+router.route('/coverImage').patch(
+    jwtVerify, // jwtVerify is essential for securing routes and making sure only logged-in users can perform certain actions.
+    upload.single('coverImage'), // handles single file with fieldname 'coverImage'
+    updateUserCoverImage
+)
 
 // debug code
 router.post('/debug', upload.any(), (req, res) => {

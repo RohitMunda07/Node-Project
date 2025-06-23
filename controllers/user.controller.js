@@ -5,6 +5,8 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
 import fs from 'fs'
+import { upload } from '../middlewares/multer.middleware.js';
+import { channel, subscribe } from 'diagnostics_channel';
 
 // it is a internal function we don't need to use ascyncHandle(used for server communication)
 const generateAccessTokenAndRefreshToken = async (userId) => {
@@ -79,10 +81,10 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // 5. upload them to cloudinary, avtar
     // it will take time so we need to use await
-    let avatarRes, coverRes;
+    let coverImageRes, coverRes;
 
     try {
-        avatarRes = await uploadOnCloudinary(avatarLocalPath);
+        coverImageRes = await uploadOnCloudinary(avatarLocalPath);
         coverRes = await uploadOnCloudinary(coverImageLocalPath);
     } catch (err) {
         throw new ApiError(500, "Cloudinary Upload Failed: " + err.message);
@@ -91,7 +93,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // 6. create user object - create entry in DB
     const user = await User.create({
         fullName,
-        avatar: avatarRes.url,
+        avatar: coverImageRes.url,
         coverImage: coverRes?.url || "", // if extist take it out otherwise let it ""
         email,
         password,
@@ -244,8 +246,229 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 })
 
+// change password only when use is logged in => access of user(method assigned by middleware)
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    // taking fields from user
+    const { oldPassoword, newPassword } = req.body // basically in json format
 
-export { registerUser, loginUser, logOutUser, refreshAccessToken }
+    const user = await User.findById(req.user?._id)
+
+    const isOldPasswordCorrect = await user.isPasswordCorrect(oldPassoword)
+
+    if (!isOldPasswordCorrect) {
+        throw new ApiError(400, "Invalid Old Password")
+    }
+
+    user.password = newPassword
+    user.save({ validateBeforeSave: false })
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                {},
+                "Password Changed Successfully"
+            )
+        )
+})
+
+// get current user
+const getCurrentUser = asyncHandler(async (req, res) => {
+    return res.status(200).json(200, req.user, "User Fetch Successfully")
+})
+
+// update Account Details
+const updateAccoutDetails = asyncHandler(async (req, res) => {
+    // getting fields from user
+    const { fullName, email } = req.body
+
+    if (!(fullName || email)) {
+        throw new ApiError(400, "Error fetching FullName or Email")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                email: email
+            }
+        },
+        { new: true } // returns the updated user with new values
+    ).select("-password -refreshToken")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Account Updated Successfully")
+        )
+})
+
+// update user Avatar
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    // multer provides req.file for single image upload
+    const avatarLocalPath = req.file?.path
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar Not Available")
+    }
+
+    try {
+        const coverImageRes = await uploadOnCloudinary(avatarLocalPath)
+        if (!coverImageRes.url) {
+            throw new ApiError(500, "Something went wrong while uploading avatar")
+        }
+    } catch (error) {
+        throw new ApiError(500, error?.message || "Error in Uploading file")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        { $set: { avatar: coverImageRes?.url } },
+        { new: true }
+    ).select("-password -refreshToken")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "Avatar Updated Successfully"
+            )
+        )
+
+})
+
+// update user CoverImage
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    // multer provides req.file for single image upload
+    const coverImageLocalPath = req.file?.path
+
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Cover Image Not Available")
+    }
+
+    try {
+        const coverImageRes = await uploadOnCloudinary(coverImageLocalPath)
+        if (!coverImageRes.url) {
+            throw new ApiError(500, "Something went wrong while uploading avatar")
+        }
+    } catch (error) {
+        throw new ApiError(500, error?.message || "Error in Uploading file")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        { $set: { coverImage: coverImageRes?.url } },
+        { new: true }
+    ).select("-password -refreshToken")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "Cover Image Updated Successfully"
+            )
+        )
+
+})
+
+// getting user's channel profile
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { userName } = req.params // this is the url
+
+    if (!userName?.trim()) {
+        throw new ApiError(400, "Username not found")
+    }
+
+    // channel is an array
+    const channel = await User.aggregate([
+        {
+            $match: {
+                userName: userName?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "Subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "SubscribeTo"
+            }
+        },
+        {
+            $addFields: {
+                subscribeCount: {
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribeTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                userName: 1,
+                subscribeCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1
+            }
+        }
+    ])
+
+    console.log("channel: ", channel)
+
+    if (!channel) {
+        throw new ApiError(400, "Channel does not exits")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            channel[0],
+            "Channel fetch SuccessFull"
+        )
+    )
+})
+
+
+export {
+    registerUser,
+    loginUser,
+    logOutUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccoutDetails,
+    updateUserAvatar,
+    updateUserCoverImage,
+    getUserChannelProfile
+}
 
 
 // import { ApiError } from '../utils/ApiErrors.js';
@@ -309,9 +532,9 @@ export { registerUser, loginUser, logOutUser, refreshAccessToken }
 //   }
 
 //   // 5. Upload to Cloudinary
-//   let avatarRes, coverRes;
+//   let coverImageRes, coverRes;
 //   try {
-//     avatarRes = await uploadOnCloudinary(avatarPath);
+//     coverImageRes = await uploadOnCloudinary(avatarPath);
 //     coverRes = coverImageLocalPath ? await uploadOnCloudinary(coverImageLocalPath) : null;
 //   } catch (error) {
 //     throw new ApiError(500, `Cloudinary Upload Failed: ${error.message}`);
@@ -323,7 +546,7 @@ export { registerUser, loginUser, logOutUser, refreshAccessToken }
 //     email,
 //     password,
 //     userName: userName.toLowerCase(),
-//     avatar: avatarRes?.url,
+//     avatar: coverImageRes?.url,
 //     coverImage: coverRes?.url || ""
 //   });
 

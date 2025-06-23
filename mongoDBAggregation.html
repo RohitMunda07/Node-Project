@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB $lookup Explained - Channel & Subscriber System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .btn.active {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+        
+        .pipeline-container {
+            padding: 30px;
+        }
+        
+        .stage {
+            margin-bottom: 40px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .stage.active {
+            border-color: #3498db;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        .stage-header {
+            background: linear-gradient(45deg, #34495e, #2c3e50);
+            color: white;
+            padding: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: relative;
+        }
+        
+        .stage-number {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .stage-content {
+            padding: 25px;
+        }
+        
+        .lookup-explanation {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        
+        .lookup-explanation h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.3em;
+        }
+        
+        .lookup-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .lookup-field {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #f39c12;
+        }
+        
+        .lookup-field strong {
+            color: #f39c12;
+        }
+        
+        .data-section {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .data-box {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .data-box h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .data-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .explanation {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .explanation h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .collection-label {
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .join-visual {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .join-box {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .join-arrow {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .key-highlight {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .data-section, .join-visual {
+                flex-direction: column;
+            }
+            
+            .data-box {
+                min-width: auto;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .join-box {
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MongoDB $lookup Explained</h1>
+            <p>Channel & Subscriber System - Understanding Joins with Clear Examples</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn active" onclick="showStage(0)">Collections Setup</button>
+            <button class="btn" onclick="showStage(1)">Find Channel</button>
+            <button class="btn" onclick="showStage(2)">Find Channel's Subscribers</button>
+            <button class="btn" onclick="showStage(3)">Find Channel's Subscriptions</button>
+            <button class="btn" onclick="showStage(4)">Calculate Counts</button>
+            <button class="btn" onclick="showStage(5)">Final Result</button>
+        </div>
+        
+        <div class="pipeline-container">
+            <!-- Stage 0: Collections Setup -->
+            <div class="stage active" id="stage-0">
+                <div class="stage-header">
+                    Database Collections Overview
+                    <div class="stage-number">0</div>
+                </div>
+                <div class="stage-content">
+                    <div class="data-section">
+                        <div class="data-box">
+                            <div class="collection-label">📺 Channels Collection</div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;<span class="key-highlight">channelId: "ch001"</span>,<br>
+                                &nbsp;&nbsp;channelName: "TechVlogger",<br>
+                                &nbsp;&nbsp;ownerName: "Alice Johnson",<br>
+                                &nbsp;&nbsp;description: "Tech reviews and tutorials"<br>
+                                }
+                            </div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;<span class="key-highlight">channelId: "ch002"</span>,<br>
+                                &nbsp;&nbsp;channelName: "CookingMaster",<br>
+                                &nbsp;&nbsp;ownerName: "Bob Chef",<br>
+                                &nbsp;&nbsp;description: "Delicious recipes daily"<br>
+                                }
+                            </div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;<span class="key-highlight">channelId: "ch003"</span>,<br>
+                                &nbsp;&nbsp;channelName: "FitnessGuru",<br>
+                                &nbsp;&nbsp;ownerName: "Carol Trainer",<br>
+                                &nbsp;&nbsp;description: "Workout tips and motivation"<br>
+                                }
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <div class="collection-label">👥 Subscriptions Collection</div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;subscriptionId: "sub001",<br>
+                                &nbsp;&nbsp;<span class="key-highlight">viewerUserId: "user123"</span>,<br>
+                                &nbsp;&nbsp;<span class="key-highlight">subscribedToChannel: "ch001"</span><br>
+                                }
+                            </div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;subscriptionId: "sub002",<br>
+                                &nbsp;&nbsp;<span class="key-highlight">viewerUserId: "user456"</span>,<br>
+                                &nbsp;&nbsp;<span class="key-highlight">subscribedToChannel: "ch001"</span><br>
+                                }
+                            </div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;subscriptionId: "sub003",<br>
+                                &nbsp;&nbsp;<span class="key-highlight">viewerUserId: "ch001"</span>,<br>
+                                &nbsp;&nbsp;<span class="key-highlight">subscribedToChannel: "ch002"</span><br>
+                                }
+                            </div>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;subscriptionId: "sub004",<br>
+                                &nbsp;&nbsp;<span class="key-highlight">viewerUserId: "ch001"</span>,<br>
+                                &nbsp;&nbsp;<span class="key-highlight">subscribedToChannel: "ch003"</span><br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="explanation">
+                        <h4>📋 System Overview</h4>
+                        We have a YouTube-like system where:<br>
+                        • <strong>Channels</strong> create content (like users in your original code)<br>
+                        • <strong>Subscriptions</strong> track who subscribes to which channel<br>
+                        • We want to get profile info for "TechVlogger" channel (ch001)<br>
+                        • Goal: Find how many subscribers it has + what channels it subscribes to
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 1: Match -->
+            <div class="stage" id="stage-1" style="display: none;">
+                <div class="stage-header">
+                    Stage 1: Find the Target Channel
+                    <div class="stage-number">1</div>
+                </div>
+                <div class="stage-content">
+                    <div class="code-block">
+{<br>
+&nbsp;&nbsp;$match: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;channelName: "TechVlogger"<br>
+&nbsp;&nbsp;}<br>
+}
+                    </div>
+                    
+                    <div class="data-section">
+                        <div class="data-box">
+                            <h4>📤 Found Channel</h4>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;<span class="key-highlight">channelId: "ch001"</span>,<br>
+                                &nbsp;&nbsp;channelName: "TechVlogger",<br>
+                                &nbsp;&nbsp;ownerName: "Alice Johnson",<br>
+                                &nbsp;&nbsp;description: "Tech reviews and tutorials"<br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>🎯 What happened:</h4>
+                        We filtered all channels to find only "TechVlogger" (ch001). This channel will be the base for our next joins.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 2: First Lookup -->
+            <div class="stage" id="stage-2" style="display: none;">
+                <div class="stage-header">
+                    Stage 2: Find Who Subscribes TO This Channel
+                    <div class="stage-number">2</div>
+                </div>
+                <div class="stage-content">
+                    <div class="lookup-explanation">
+                        <h3>🔍 What $lookup Does</h3>
+                        <p>$lookup is like a JOIN in SQL. It connects two collections by matching fields.</p>
+                        
+                        <div class="lookup-fields">
+                            <div class="lookup-field">
+                                <strong>from:</strong> "subscriptions"<br>
+                                <small>Which collection to join with</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>localField:</strong> "channelId"<br>
+                                <small>Field from current document (ch001)</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>foreignField:</strong> "subscribedToChannel"<br>
+                                <small>Field from subscriptions collection</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>as:</strong> "mySubscribers"<br>
+                                <small>Name of the new array field</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+{<br>
+&nbsp;&nbsp;$lookup: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;from: "subscriptions",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;localField: "channelId",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;foreignField: "subscribedToChannel",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;as: "mySubscribers"<br>
+&nbsp;&nbsp;}<br>
+}
+                    </div>
+
+                    <div class="join-visual">
+                        <div class="join-box">
+                            <strong>TechVlogger Channel</strong><br>
+                            channelId: <span class="key-highlight">ch001</span>
+                        </div>
+                        <div class="join-arrow">⟷</div>
+                        <div class="join-box">
+                            <strong>Subscriptions</strong><br>
+                            subscribedToChannel: <span class="key-highlight">ch001</span>
+                        </div>
+                    </div>
+                    
+                    <div class="data-section">
+                        <div class="data-box">
+                            <h4>📤 Result After Join</h4>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;channelId: "ch001",<br>
+                                &nbsp;&nbsp;channelName: "TechVlogger",<br>
+                                &nbsp;&nbsp;ownerName: "Alice Johnson",<br>
+                                &nbsp;&nbsp;<strong>mySubscribers: [</strong><br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;{ subscriptionId: "sub001", viewerUserId: "user123", subscribedToChannel: "ch001" },<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;{ subscriptionId: "sub002", viewerUserId: "user456", subscribedToChannel: "ch001" }<br>
+                                &nbsp;&nbsp;<strong>]</strong><br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>🔗 Join Logic:</h4>
+                        MongoDB found all subscription records where <code>subscribedToChannel</code> equals our channel's <code>channelId</code> (ch001). This gives us everyone who subscribes TO TechVlogger.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 3: Second Lookup -->
+            <div class="stage" id="stage-3" style="display: none;">
+                <div class="stage-header">
+                    Stage 3: Find What Channels THIS Channel Subscribes To
+                    <div class="stage-number">3</div>
+                </div>
+                <div class="stage-content">
+                    <div class="lookup-explanation">
+                        <h3>🔍 Second $lookup - Different Perspective</h3>
+                        <p>Now we find what channels TechVlogger subscribes to (reverse direction)</p>
+                        
+                        <div class="lookup-fields">
+                            <div class="lookup-field">
+                                <strong>from:</strong> "subscriptions"<br>
+                                <small>Same collection, different join</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>localField:</strong> "channelId"<br>
+                                <small>Our channel ID (ch001)</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>foreignField:</strong> "viewerUserId"<br>
+                                <small>Where our channel is the viewer/subscriber</small>
+                            </div>
+                            <div class="lookup-field">
+                                <strong>as:</strong> "mySubscriptions"<br>
+                                <small>Channels this channel subscribes to</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+{<br>
+&nbsp;&nbsp;$lookup: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;from: "subscriptions",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;localField: "channelId",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;foreignField: "viewerUserId",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;as: "mySubscriptions"<br>
+&nbsp;&nbsp;}<br>
+}
+                    </div>
+
+                    <div class="join-visual">
+                        <div class="join-box">
+                            <strong>TechVlogger Channel</strong><br>
+                            channelId: <span class="key-highlight">ch001</span>
+                        </div>
+                        <div class="join-arrow">⟷</div>
+                        <div class="join-box">
+                            <strong>Subscriptions</strong><br>
+                            viewerUserId: <span class="key-highlight">ch001</span>
+                        </div>
+                    </div>
+                    
+                    <div class="data-section">
+                        <div class="data-box">
+                            <h4>📤 Result After Second Join</h4>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;channelId: "ch001",<br>
+                                &nbsp;&nbsp;channelName: "TechVlogger",<br>
+                                &nbsp;&nbsp;mySubscribers: [/* 2 subscribers */],<br>
+                                &nbsp;&nbsp;<strong>mySubscriptions: [</strong><br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;{ subscriptionId: "sub003", viewerUserId: "ch001", subscribedToChannel: "ch002" },<br>
+                                &nbsp;&nbsp;&nbsp;&nbsp;{ subscriptionId: "sub004", viewerUserId: "ch001", subscribedToChannel: "ch003" }<br>
+                                &nbsp;&nbsp;<strong>]</strong><br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>🔗 Join Logic:</h4>
+                        MongoDB found all subscription records where <code>viewerUserId</code> equals our channel's <code>channelId</code> (ch001). This shows TechVlogger subscribes to CookingMaster and FitnessGuru.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 4: AddFields -->
+            <div class="stage" id="stage-4" style="display: none;">
+                <div class="stage-header">
+                    Stage 4: Calculate Counts and Status
+                    <div class="stage-number">4</div>
+                </div>
+                <div class="stage-content">
+                    <div class="code-block">
+{<br>
+&nbsp;&nbsp;$addFields: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;totalSubscribers: { $size: "$mySubscribers" },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;totalSubscriptions: { $size: "$mySubscriptions" },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;isCurrentUserSubscribed: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$cond: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if: { $in: [currentUserId, "$mySubscribers.viewerUserId"] },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;then: true,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else: false<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;}<br>
+}
+                    </div>
+                    
+                    <div class="data-section">
+                        <div class="data-box">
+                            <h4>🧮 Calculations</h4>
+                            <div class="highlight">
+                                <strong>totalSubscribers:</strong><br>
+                                Count items in mySubscribers array → <strong>2</strong><br><br>
+                                
+                                <strong>totalSubscriptions:</strong><br>
+                                Count items in mySubscriptions array → <strong>2</strong><br><br>
+                                
+                                <strong>isCurrentUserSubscribed:</strong><br>
+                                Check if current user's ID is in mySubscribers → <strong>true/false</strong>
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <h4>📤 Result</h4>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;channelId: "ch001",<br>
+                                &nbsp;&nbsp;channelName: "TechVlogger",<br>
+                                &nbsp;&nbsp;mySubscribers: [/* array */],<br>
+                                &nbsp;&nbsp;mySubscriptions: [/* array */],<br>
+                                &nbsp;&nbsp;<strong>totalSubscribers: 2,</strong><br>
+                                &nbsp;&nbsp;<strong>totalSubscriptions: 2,</strong><br>
+                                &nbsp;&nbsp;<strong>isCurrentUserSubscribed: false</strong><br>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>🧮 What $addFields does:</h4>
+                        Creates computed fields using the arrays from our $lookup operations. We count array sizes and check if the current user is among the subscribers.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 5: Project -->
+            <div class="stage" id="stage-5" style="display: none;">
+                <div class="stage-header">
+                    Stage 5: Clean Up Final Output
+                    <div class="stage-number">5</div>
+                </div>
+                <div class="stage-content">
+                    <div class="code-block">
+{<br>
+&nbsp;&nbsp;$project: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;channelId: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;channelName: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ownerName: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;description: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;totalSubscribers: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;totalSubscriptions: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;isCurrentUserSubscribed: 1<br>
+&nbsp;&nbsp;}<br>
+}
+                    </div>
+                    
+                    <div class="data-section">
+                        <div class="data-box">
+                            <h4>🎯 Final Clean Result</h4>
+                            <div class="data-item">
+                                {<br>
+                                &nbsp;&nbsp;<strong>channelId: "ch001",</strong><br>
+                                &nbsp;&nbsp;<strong>channelName: "TechVlogger",</strong><br>
+                                &nbsp;&nbsp;<strong>ownerName: "Alice Johnson",</strong><br>
+                                &nbsp;&nbsp;<strong>description: "Tech reviews and tutorials",</strong><br>
+                                &nbsp;&nbsp;<strong>totalSubscribers: 2,</strong><br>
+                                &nbsp;&nbsp;<strong>totalSubscriptions: 2,</strong><br>
+                                &nbsp;&nbsp;<strong>isCurrentUserSubscribed: false</strong><br>
+                                }
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <h4>🗑️ Removed Fields</h4>
+                            <div class="highlight">
+                                These arrays are removed from output:<br>
+                                • <strong>mySubscribers</strong> (raw array)<br>
+                                • <strong>mySubscriptions</strong> (raw array)<br><br>
+                                We keep only the computed counts and essential channel info.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h4>✨ Final Step:</h4>
+                        $project selects only the fields we want to send to the client. We exclude the large arrays and keep only the summary data and channel details.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showStage(stageNumber) {
+            // Hide all stages
+            const stages = document.querySelectorAll('.stage');
+            stages.forEach(stage => {
+                stage.style.display = 'none';
+                stage.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected stage
+            const selectedStage = document.getElementById(`stage-${stageNumber}`);
+            selectedStage.style.display = 'block';
+            selectedStage.classList.add('active');
+            
+            // Add active class to clicked button
+            buttons[stageNumber].classList.add('active');
+        }
+        
+        // Initialize with first stage
+        showStage(0);
+    </script>
+</body>
+</html>

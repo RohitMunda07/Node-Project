@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from 'fs'
+import { ApiError } from "./ApiErrors";
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
@@ -20,7 +21,7 @@ const uploadOnCloudinary = async (localFilePath) => {
         fs.unlinkSync(localFilePath)
         console.log("File Unliked");
         console.log("Cloudinary Response: ", response);
-        
+
         return response;
 
     } catch (error) {
@@ -30,4 +31,11 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-export { uploadOnCloudinary }
+const deleteOnCloudinary = async (oldFilePath) => {
+    if (!oldFilePath) {
+        throw new ApiError(500, "Deleting file with no path")
+    }
+    await cloudinary.uploader.destroy(oldFilePath)
+}
+
+export { uploadOnCloudinary, deleteOnCloudinary }

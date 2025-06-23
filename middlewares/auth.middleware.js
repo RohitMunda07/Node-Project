@@ -14,12 +14,12 @@ export const jwtVerify = asyncHandler(async (req, _, next) => {
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
-
-        const user = await User.findById(decodedToken?._id).select('-password -refreshToken')
-
+        
         if (!decodedToken) {
             throw new ApiError(401, "Invalid Access Token")
         }
+        
+        const user = await User.findById(decodedToken?._id).select('-password -refreshToken')
 
         req.user = user; // added user(method) to req
         next() // moving the middleware
