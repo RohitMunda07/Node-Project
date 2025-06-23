@@ -2,7 +2,7 @@ import { Router } from "express";
 import { loginUser, logOutUser, registerUser, refreshAccessToken, updateUserAvatar, updateUserCoverImage, changeCurrentPassword, getCurrentUser, updateAccoutDetails, getUserChannelProfile, getUserWatchHistory } from "../controllers/user.controller.js";
 import { upload } from '../middlewares/multer.middleware.js'
 import { jwtVerify } from "../middlewares/auth.middleware.js";
-import { JsonWebTokenError } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const router = Router();
 
