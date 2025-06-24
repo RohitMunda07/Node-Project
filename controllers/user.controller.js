@@ -276,7 +276,15 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 // get current user
 const getCurrentUser = asyncHandler(async (req, res) => {
-    return res.status(200).json(200, req.user, "User Fetch Successfully")
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                req.user,
+                "User Fetched Successfully"
+            )
+        )
 })
 
 // update Account Details
@@ -315,9 +323,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Avatar Not Available")
     }
 
+    let avatarRes;
     try {
-        const coverImageRes = await uploadOnCloudinary(avatarLocalPath)
-        if (!coverImageRes.url) {
+        avatarRes = await uploadOnCloudinary(avatarLocalPath)
+        if (!avatarRes.url) {
             throw new ApiError(500, "Something went wrong while uploading avatar")
         }
     } catch (error) {
@@ -326,7 +335,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
-        { $set: { avatar: coverImageRes?.url } },
+        { $set: { avatar: avatarRes?.url } },
         { new: true }
     ).select("-password -refreshToken")
 
@@ -350,9 +359,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     if (!coverImageLocalPath) {
         throw new ApiError(400, "Cover Image Not Available")
     }
-
+    
+    let coverImageRes;
     try {
-        const coverImageRes = await uploadOnCloudinary(coverImageLocalPath)
+        coverImageRes = await uploadOnCloudinary(coverImageLocalPath)
         if (!coverImageRes.url) {
             throw new ApiError(500, "Something went wrong while uploading avatar")
         }
@@ -509,14 +519,14 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
     ])
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(
-            200,
-            user[0].watchHistory,
-            "Watch history fetched successfully"
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user[0].watchHistory,
+                "Watch history fetched successfully"
+            )
         )
-    )
 })
 
 
