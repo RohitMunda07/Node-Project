@@ -31,11 +31,63 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-const deleteOnCloudinary = async (oldFilePath) => {
-    if (!oldFilePath) {
+const deleteOnCloudinary = async (oldFileId) => {
+    if (!oldFileId) {
         throw new ApiError(500, "Deleting file with no path")
     }
-    await cloudinary.uploader.destroy(oldFilePath)
+
+    try {
+        const urlPart = oldFileId.split('/')
+        const folderName = urlPart[urlPart.length - 2] // e.g. 'myfolder'
+        const fileWithExt = urlPart[urlPart.length - 1]  // e.g. 'avatar_abc123.png'
+        const fileName = fileWithExt.split('.')[0]
+        const public_id = `${folderName}/${fileName}`; // e.g. 'myfolder/avatar_abc123'
+
+        console.log('public_id: ', public_id);
+
+        const result = await cloudinary.uploader.destroy(fileName)
+
+        console.log("✅ Deleted:", result);
+    } catch (error) {
+        console.error("❌ Deletion failed:", error);
+        throw new ApiError(500, "Failed to delete file from Cloudinary");
+    }
 }
 
-export { uploadOnCloudinary, deleteOnCloudinary }
+// Upload Video
+const uploadVideoOnCloudinary = async (localFilePath) => {
+    console.log("Checking if file exists:", localFilePath);
+    console.log("Exists:", fs.existsSync(localFilePath));
+
+    try {
+        if (!localFilePath) return null;
+
+        const response = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_large(
+                localFilePath,
+                { resource_type: "video" },
+                (error, result) => {
+                    if (error) return reject(error);
+                    return resolve(result);
+                }
+            );
+        });
+
+        console.log("Video Uploaded: ", response.secure_url);
+
+        // ✅ Only delete after full success
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+            console.log("File Unlinked");
+        }
+
+        return response;
+
+
+    } catch (error) {
+        fs.unlinkSync(localFilePath)
+        throw new ApiError(400, "Error uploading video")
+    }
+}
+
+export { uploadOnCloudinary, deleteOnCloudinary, uploadVideoOnCloudinary }

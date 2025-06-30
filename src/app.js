@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 // importing userRouter
 import userRouter from '../routes/user.route.js'
+import videoRouter from '../routes/video.route.js'
 import multer from 'multer'
 
 const app = express()
@@ -26,7 +27,11 @@ app.use(express.static("public"))
 // confuguration for cookies
 app.use(cookieParser())
 
+// user route
 app.use("/api/v1/users", userRouter)
+
+// video route
+app.use("/api/v1/videos", videoRouter)
 // working -> http://localhost3000/api/v1/users/register
 
 // ✅ Error handler for multer

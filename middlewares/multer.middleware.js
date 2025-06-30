@@ -45,10 +45,11 @@ const storage = multer.diskStorage({
     cb(null, TEMP_DIR)
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname)
+    const uniqueName = Date.now() + '-' + file.originalname
     console.log("My file :", file);
+    cb(null, uniqueName)
+}
 
-  }
 })
 
 export const upload = multer({
