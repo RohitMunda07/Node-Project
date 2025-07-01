@@ -4,3 +4,149 @@ mongosh "mongodb+srv://rohityoutube.iu8yrx0.mongodb.net/" --apiVersion 1 --usern
 
 
 .env - MONGODB_URI = mongodb+srv://p1524674:PAknZXAHBrAbhSEx@rohityoutube.iu8yrx0.mongodb.net/?retryWrites=true&w=majority&appName=RohitYoutube
+
+Json Response
+My file : {
+  fieldname: 'video',
+  originalname: 'fortuner.mp4',
+  encoding: '7bit',
+  mimetype: 'video/mp4'
+}
+My file : {
+  fieldname: 'thumbnail',
+  originalname: '7181623.jpg',
+  encoding: '7bit',
+  mimetype: 'image/jpeg'
+}
+req.body(title & description):  [Object: null prototype] {
+  title: 'fortuner video(2)',
+  description: 'this is a fortuner vedio clip'
+}
+req.file (video):  [Object: null prototype] {
+  video: [
+    {
+      fieldname: 'video',
+      originalname: 'fortuner.mp4',
+      encoding: '7bit',
+      mimetype: 'video/mp4',
+      destination: './public/temp',
+      filename: '1751288052394-fortuner.mp4',
+      path: 'public\\temp\\1751288052394-fortuner.mp4',
+      size: 1149748
+    }
+  ],
+  thumbnail: [
+    {
+      fieldname: 'thumbnail',
+      originalname: '7181623.jpg',
+      encoding: '7bit',
+      mimetype: 'image/jpeg',
+      destination: './public/temp',
+      filename: '1751288052402-7181623.jpg',
+      path: 'public\\temp\\1751288052402-7181623.jpg',
+      size: 125090
+    }
+  ]
+}
+Files received by multer: [Object: null prototype] {
+  video: [
+    {
+      fieldname: 'video',
+      originalname: 'fortuner.mp4',
+      encoding: '7bit',
+      mimetype: 'video/mp4',
+      destination: './public/temp',
+      filename: '1751288052394-fortuner.mp4',
+      path: 'public\\temp\\1751288052394-fortuner.mp4',
+      size: 1149748
+    }
+  ],
+  thumbnail: [
+    {
+      fieldname: 'thumbnail',
+      originalname: '7181623.jpg',
+      encoding: '7bit',
+      mimetype: 'image/jpeg',
+      destination: './public/temp',
+      filename: '1751288052402-7181623.jpg',
+      path: 'public\\temp\\1751288052402-7181623.jpg',
+      size: 125090
+    }
+  ]
+}
+Checking if file exists: public\temp\1751288052394-fortuner.mp4
+Exists: true
+Video Uploaded:  https://res.cloudinary.com/dmqennj82/video/upload/v1751288066/vyq22nplcbdclpagpvnw.mp4
+File Unlinked
+videoResponseFromCloudinary: {
+  asset_id: '0fa4a3fa67e92a577d3208eff072e3e4',
+  public_id: 'vyq22nplcbdclpagpvnw',
+  version: 1751288066,
+  version_id: 'efb45ebaf538d20d2569b33f5e6df30b',
+  signature: '73eed2c38901756b2c9b5139f6a42140b69d232a',
+  width: 480,
+  height: 854,
+  format: 'mp4',
+  resource_type: 'video',
+  created_at: '2025-06-30T12:54:26Z',
+  tags: [],
+  pages: 0,
+  bytes: 1149748,
+  type: 'upload',
+  etag: '39a677f926554207f7a0730f9d55b0f4',
+  placeholder: false,
+  url: 'http://res.cloudinary.com/dmqennj82/video/upload/v1751288066/vyq22nplcbdclpagpvnw.mp4',
+  secure_url: 'https://res.cloudinary.com/dmqennj82/video/upload/v1751288066/vyq22nplcbdclpagpvnw.mp4',
+  playback_url: 'https://res.cloudinary.com/dmqennj82/video/upload/sp_auto/v1751288066/vyq22nplcbdclpagpvnw.m3u8',
+  asset_folder: '',
+  display_name: 'vyq22nplcbdclpagpvnw',
+  audio: {
+    codec: 'aac',
+    bit_rate: '128278',
+    frequency: 44100,
+    channels: 2,
+    channel_layout: 'stereo'
+  },
+  video: {
+    pix_format: 'yuv420p',
+    codec: 'h264',
+    level: 31,
+    profile: 'Main',
+    bit_rate: '505106',
+    dar: '240:427',
+    time_base: '1/15360'
+  },
+  is_audio: false,
+  frame_rate: 30,
+  bit_rate: 635833,
+  duration: 14.466032,
+  rotation: 0,
+  original_filename: '1751288052394-fortuner',
+  nb_frames: 432,
+  api_key: '744273563687664'
+}
+File uploaded:  http://res.cloudinary.com/dmqennj82/image/upload/v1751288068/yw65iawbrzq6opcg22hs.jpg
+File Unliked
+Cloudinary Response:  {
+  asset_id: '833b66d2e80790a7d0ba86def3cc4493',
+  public_id: 'yw65iawbrzq6opcg22hs',
+  version: 1751288068,
+  version_id: '88ed9c1408e80874a25150a44b5c7212',
+  signature: 'd2a9e7ac3515798e26394e4b1b201cd16b3d6811',
+  width: 1920,
+  height: 1028,
+  format: 'jpg',
+  resource_type: 'image',
+  created_at: '2025-06-30T12:54:28Z',
+  tags: [],
+  bytes: 125090,
+  type: 'upload',
+  etag: 'dcc00dcc2298cdb437ef3ae38cb9e362',
+  placeholder: false,
+  url: 'http://res.cloudinary.com/dmqennj82/image/upload/v1751288068/yw65iawbrzq6opcg22hs.jpg',
+  secure_url: 'https://res.cloudinary.com/dmqennj82/image/upload/v1751288068/yw65iawbrzq6opcg22hs.jpg',
+  asset_folder: '',
+  display_name: 'yw65iawbrzq6opcg22hs',
+  original_filename: '1751288052402-7181623',
+  api_key: '744273563687664'
+}

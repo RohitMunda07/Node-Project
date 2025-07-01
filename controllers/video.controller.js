@@ -7,10 +7,51 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js"
 
 
+
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
     //TODO: get all videos based on query, sort, pagination
-    
+
+    // 1. getting details from user
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+
+    // 2. valide functionality
+    if (!sortBy || !sortType) {
+        throw new ApiError(400, "Sort By or Sort Type is required")
+    }
+
+    // base filter
+    const filter = { isPublished: true }
+
+    // if query exists
+    if (query) {
+        filter.$or = [
+            { title: { $regex: query, $options: 'i' } },
+            { description: { $regex: query, $options: 'i' } }
+        ]
+    }
+
+    // if userId exists
+    if (userId) {
+        // validate userId
+        if (!isValidObjectId(userId)) {
+            throw new ApiError(400, "User Id not found")
+        }
+
+        // injecting direct id
+        filter.owner = userId;
+    }
+
+    const video = await Video.find(filter)
+
+    return res.status(200)
+        .json(
+            new ApiResponse(
+                201,
+                video,
+                "All Videos"
+            )
+        )
+
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -30,9 +71,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
 
     // 2. check for an existing video
-    const existingVideo = await Video.findOne({
-        $or: [{ title }]
-    })
+    const existingVideo = await Video.findOne({ title })
     if (existingVideo) {
         throw new ApiError(400, `Video with the title ${title} already exist`)
     }
@@ -57,11 +96,14 @@ const publishAVideo = asyncHandler(async (req, res) => {
     // 4. Upload to cloudinary
     let videoUrl;
     let thumbnailUrl;
+    let duration;
     try {
 
         console.log("Files received by multer:", req.files);
         const videoResponseoUrl = await uploadVideoOnCloudinary(videoPath);
         videoUrl = videoResponseoUrl?.secure_url;
+        duration = videoResponseoUrl.duration;
+        console.log('videoResponseFromCloudinary:', videoResponseoUrl);
 
         const thumbnailResponse = await uploadOnCloudinary(thumbnailPath);
         thumbnailUrl = thumbnailResponse?.secure_url;
@@ -73,16 +115,17 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const video = await Video.create({
         video: videoUrl,
         thumbnail: thumbnailUrl,
-        owner: req.user,
-        title: title,
-        description: description,
+        owner: req.user._id,
+        title,
+        description,
+        duration,
         isPublished: true
     })
 
     // 6. return response
     return res.status(201).json(
         new ApiResponse(
-            200,
+            201,
             video,
             "Video Published SuccessFully"
         )

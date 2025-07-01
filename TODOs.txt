@@ -1,0 +1,1 @@
+1. implement jwtVerify on video route
