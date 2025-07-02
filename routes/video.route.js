@@ -15,6 +15,7 @@ router.route("/upload").post(
 )
 
 router.route("/getAllVideos").get(
+    // jwtVerify,
     getAllVideos
 )
 

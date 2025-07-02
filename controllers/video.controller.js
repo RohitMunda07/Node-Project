@@ -16,13 +16,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     // 2. valide functionality
     if (!sortBy || !sortType) {
-        throw new ApiError(400, "Sort By or Sort Type is required")
+        throw new ApiError(400, "sortBy and sortType are required")
     }
 
-    // base filter
+    // 3. base filter
     const filter = { isPublished: true }
 
-    // if query exists
+    // 4. if query exists - add search functionality
     if (query) {
         filter.$or = [
             { title: { $regex: query, $options: 'i' } },
@@ -30,7 +30,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         ]
     }
 
-    // if userId exists
+    // 5. if userId exists - filter by owner
     if (userId) {
         // validate userId
         if (!isValidObjectId(userId)) {
@@ -41,13 +41,58 @@ const getAllVideos = asyncHandler(async (req, res) => {
         filter.owner = userId;
     }
 
+    // 6. handle sorting
+    // 1 for ascending order, -1 for descending order
+    let sortVal;
+    if (sortType && sortType.trim !== '') {
+        const normalizedSortType = sortType.toLowerCase();
+        if (normalizedSortType === 'ascending' || normalizedSortType === 'asc') {
+            sortVal = 1;
+        } else if (normalizedSortType === 'descending' || normalizedSortType === 'desc') {
+            sortVal = -1;
+        } else {
+            throw new ApiError(400, "sortType must be 'asc', 'desc', 'ascending', or 'descending'")
+        }
+    }
+
+    // 7. dynamic sorting
+    let sortObject = {}
+    sortObject[sortBy] = sortVal
+
+
+    // 8. pagination offset value
+    let offset = (Number(page) - 1) * Number(limit);
+
+    // 9. get total count for pagination info
+    const totalVideos = await Video.countDocuments(filter)
+    const totalPage = Math.ceil(totalVideos) / Number(limit)
+
+    // 10. fetch videos with all filters, sorting, and pagination
     const video = await Video.find(filter)
+        .sort(sortObject)
+        .limit(limit)
+        .skip(offset)
+
+    // 11. create response with pagination info
+
+    // 12. return response
+    const responseData = {
+        video,
+        pagination: {
+            totalPage,
+            totalVideos,
+            currentPage: Number(page),
+            videosPerPage: Number(limit),
+            hasNextPage: Number(page) < totalPage,
+            hasPreviousPage: Number(page) > 1
+        }
+    }
 
     return res.status(200)
         .json(
             new ApiResponse(
-                201,
-                video,
+                200,
+                responseData,
                 "All Videos"
             )
         )
