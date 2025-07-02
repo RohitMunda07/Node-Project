@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { getAllVideos, publishAVideo } from "../controllers/video.controller.js";
+import { getAllVideos, getVideoById, publishAVideo } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { jwtVerify } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
 router.route("/upload").post(
-    // jwtVerify,
+    jwtVerify,
     upload.fields([
         { name: "video", maxCount: 1},
         { name: "thumbnail", maxCount: 1}
@@ -15,8 +15,13 @@ router.route("/upload").post(
 )
 
 router.route("/getAllVideos").get(
-    // jwtVerify,
+    jwtVerify,
     getAllVideos
+)
+
+router.route("/:videoId").get(
+    jwtVerify,
+    getVideoById
 )
 
 export default router;

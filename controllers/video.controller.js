@@ -1,4 +1,5 @@
 import mongoose, { isValidObjectId } from "mongoose"
+import { ObjectId } from "mongodb"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiErrors.js"
@@ -179,8 +180,36 @@ const publishAVideo = asyncHandler(async (req, res) => {
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
     //TODO: get video by id
+    const { videoId } = req.params
+    // "_id": "68652e812131a4456a63d781",
+    // "owner": "6856b4fca1f1d9df1b2dada5",
+
+    if (videoId && !isValidObjectId(videoId)) { 
+        throw new ApiError(400, "Invalid Video Id")
+        // id is valid but it also checks the format => {{server}}/videos/getVideoById68652d7299804def9a48ff74 -> invalid
+    }
+
+    const filter = {
+        _id: videoId,
+        isPublished: true
+    }
+
+    const video = await Video.findOne(filter)
+    console.log("videoId: ", videoId)
+
+    if (!video) {
+        throw new ApiError(500, "Video not found")
+    }
+
+    return res.status(200)
+        .json(
+            new ApiResponse(
+                200,
+                video,
+                `Video with id='${videoId}' Fetched Successfylly`
+            )
+        )
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
