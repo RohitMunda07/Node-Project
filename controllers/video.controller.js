@@ -182,6 +182,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     //TODO: get video by id
+    
     const { videoId } = req.params
     // "_id": "68652e812131a4456a63d781",
     // "owner": "6856b4fca1f1d9df1b2dada5",
@@ -323,8 +324,45 @@ const updateVideo = asyncHandler(async (req, res) => {
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
     //TODO: delete video
+
+    // 1. getting videoId from user
+    const { videoId } = req.params
+
+    // 2. validate videoId\
+    if (!videoId) {
+        throw new ApiError(400, "VideoId is required")
+    }
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid VideoId")
+    }
+
+    // 3. finding existing video
+    const existingVideo = await Video.findById(videoId)
+
+    if (!existingVideo) {
+        throw new ApiError(404, 'video not found')
+    }
+
+    // 4. deleting video
+    await Video.findByIdAndDelete(videoId)
+
+
+    // 5. computing remaining videos
+    const filter = {
+        isPublished: true
+    }
+    const remainingVideos = await Video.find(filter)
+
+    return res.status(200)
+        .json(
+            new ApiResponse(
+                200,
+                remainingVideos,
+                'Video Deleted SuccessFully'
+            )
+        )
+
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
