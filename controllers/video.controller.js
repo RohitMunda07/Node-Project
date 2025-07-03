@@ -1,5 +1,5 @@
 import mongoose, { isValidObjectId } from "mongoose"
-import fs from 'fs'
+import fs, { appendFile } from 'fs'
 import { ObjectId } from "mongodb"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
@@ -7,6 +7,7 @@ import { ApiError } from "../utils/ApiErrors.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { deleteOnCloudinary, uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js"
+import { title } from "process"
 
 
 
@@ -182,7 +183,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     //TODO: get video by id
-    
+
     const { videoId } = req.params
     // "_id": "68652e812131a4456a63d781",
     // "owner": "6856b4fca1f1d9df1b2dada5",
@@ -329,7 +330,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     // 1. getting videoId from user
     const { videoId } = req.params
 
-    // 2. validate videoId\
+    // 2. validate videoId
     if (!videoId) {
         throw new ApiError(400, "VideoId is required")
     }
@@ -339,7 +340,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     // 3. finding existing video
     const existingVideo = await Video.findById(videoId)
-
     if (!existingVideo) {
         throw new ApiError(404, 'video not found')
     }
@@ -347,18 +347,15 @@ const deleteVideo = asyncHandler(async (req, res) => {
     // 4. deleting video
     await Video.findByIdAndDelete(videoId)
 
-
-    // 5. computing remaining videos
-    const filter = {
-        isPublished: true
-    }
-    const remainingVideos = await Video.find(filter)
-
     return res.status(200)
         .json(
             new ApiResponse(
                 200,
-                remainingVideos,
+                {
+                    deletedVideoId: videoId,
+                    title: existingVideo.title,
+                    description: existingVideo.description
+                },
                 'Video Deleted SuccessFully'
             )
         )
@@ -366,7 +363,52 @@ const deleteVideo = asyncHandler(async (req, res) => {
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
+
+    // 1. getting videoId from user
     const { videoId } = req.params
+
+    // 2. validate videoId
+    if (!videoId) {
+        throw new ApiError(400, "VideoId is required")
+    }
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid VideoId")
+    }
+
+    // 3. getting existing video
+    const existingVideo = await Video.findById(videoId)
+    if (!existingVideo) {
+        throw new ApiError(404, 'Video not found')
+    }
+
+    // 4. toggle functionality - return updated video
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        { isPublished: !existingVideo.isPublished },
+        { new: true } // Return updated document
+    )
+
+    // 5. returning response
+    return res.status(200)
+        .json(
+            new ApiResponse(
+                200,
+                updatedVideo, // Return the actual updated video
+                `Video ${updatedVideo.isPublished ? 'published' : 'unpublished'} successfully`
+            )
+        )
+
+     // 5. Option B: Return remaining videos (if needed by frontend)
+    // const remainingVideos = await Video.find({ isPublished: true })
+    // return res.status(200)
+    //     .json(
+    //         new ApiResponse(
+    //             200,
+    //             remainingVideos,
+    //             'Video deleted successfully'
+    //         )
+    //     )
+
 })
 
 export {
