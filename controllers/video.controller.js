@@ -1,11 +1,12 @@
 import mongoose, { isValidObjectId } from "mongoose"
+import fs from 'fs'
 import { ObjectId } from "mongodb"
 import { Video } from "../models/video.model.js"
 import { User } from "../models/user.model.js"
 import { ApiError } from "../utils/ApiErrors.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js"
+import { deleteOnCloudinary, uploadOnCloudinary, uploadVideoOnCloudinary } from "../utils/cloudinary.js"
 
 
 
@@ -185,7 +186,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     // "_id": "68652e812131a4456a63d781",
     // "owner": "6856b4fca1f1d9df1b2dada5",
 
-    if (videoId && !isValidObjectId(videoId)) { 
+    if (videoId && !isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid Video Id")
         // id is valid but it also checks the format => {{server}}/videos/getVideoById68652d7299804def9a48ff74 -> invalid
     }
@@ -213,9 +214,112 @@ const getVideoById = asyncHandler(async (req, res) => {
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
 
+    // 1. getting data from user
+    const { title, description } = req.body || {}
+
+    const { videoId } = req.params
+
+
+    // 2. validate videoId
+    if (!videoId || !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")
+    }
+
+    // 3. validate data fields
+    if (!req.files) {
+        throw new ApiError(400, "Files are Required")
+    }
+
+    // 4. local Path Extractions
+    let thumbnailFile = req.files?.thumbnail?.[0]
+    let videoFile = req.files?.video?.[0]
+
+    if (!thumbnailFile || !videoFile) {
+        throw new ApiError(400, "Thumbnail and Video files are required")
+    }
+
+    // assigning the local path 
+    const thumbnailPath = thumbnailFile.path
+    const videoPath = videoFile.path
+
+    // 5. finding the existing path
+    const existingVideo = await Video.findById(videoId)
+    if (!existingVideo) {
+        throw new ApiError(404, "Not Found")
+    }
+
+    // 6. validating title and description
+    // handling the undefined case
+    if (!title || !description) {
+        throw new ApiError(400, "Title and Description are required")
+    }
+
+    // handling the empty sting case
+    if (title.trim() === '' || description.trim() === '') {
+        throw new ApiError(400, "title and description can't be empty")
+    }
+
+    // 7. uploading to cloudinary
+    let newThumbnail;
+    let newVideo;
+
+    try {
+        if (existingVideo.thumbnail) {
+            await deleteOnCloudinary(existingVideo.thumbnail)
+        }
+        if (existingVideo.video) {
+            await deleteOnCloudinary(existingVideo.video)
+        }
+
+        // updating the thumbnail and video
+        newThumbnail = await uploadOnCloudinary(thumbnailPath)
+        newVideo = await uploadVideoOnCloudinary(videoPath)
+
+        // Check if uploads were successful
+        if (!newThumbnail || !newVideo) {
+            throw new Error("Failed to upload files to cloudinary")
+        }
+
+    } catch {
+        console.error("Cloudinary error:", error)
+    }
+
+    try {
+        // Clean up local files if upload fails
+        if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath)
+        if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath)
+    } catch {
+        throw new ApiError(500, "An Error occur while removing existing files")
+    }
+
+    // 8. dynamic data update
+    const updateData = {
+        title: title.trim(),
+        description: description.trim(),
+        thumbnail: newThumbnail.secure_url,
+        video: newVideo.secure_url
+    }
+
+    // 9. genetating response
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        updateData,
+        { new: true, runValidators: true }
+    )
+    if (!updatedVideo) {
+        throw new ApiError(404, "Failed to update video in database")
+    }
+
+    return res.status(200)
+        .json(
+            new ApiResponse(
+                200,
+                updatedVideo,
+                "Video Updated Successfully"
+            )
+        )
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
