@@ -4,6 +4,7 @@ import cors from 'cors'
 // importing userRouter
 import userRouter from '../routes/user.route.js'
 import videoRouter from '../routes/video.route.js'
+import tweetRouter from '../routes/tweet.route.js'
 import multer from 'multer'
 
 const app = express()
@@ -33,6 +34,28 @@ app.use("/api/v1/users", userRouter)
 // video route
 app.use("/api/v1/videos", videoRouter)
 // working -> http://localhost3000/api/v1/users/register
+
+// tweet route
+app.use("/api/v1/tweets", tweetRouter)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ✅ Error handler for multer
 // app.use((err, req, res, next) => {

@@ -1,3 +1,5 @@
 1. implement jwtVerify on video route
 2. implement unPublished video for author so they can see unPublished video
 3. explore .populate in mongoose
+4. aggregation implementation
+5. insert like option in tweet

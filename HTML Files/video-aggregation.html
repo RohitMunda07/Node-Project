@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB Aggregation Pipeline Visualization</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .title {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pipeline-stage {
+            margin: 30px 0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .pipeline-stage:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stage-1 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        .stage-2 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .stage-3 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .stage-4 { background: linear-gradient(135deg, #c3cfe2 0%, #c3cfe2 100%); }
+        .stage-5 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .stage-6 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stage-7 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        
+        .stage-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .stage-number {
+            background: rgba(255,255,255,0.3);
+            color: #2c3e50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .stage-5 .stage-number {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .data-flow {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .data-box {
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 200px;
+            color: #2c3e50;
+        }
+        
+        .stage-5 .data-box {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+        
+        .arrow {
+            font-size: 2em;
+            color: #2c3e50;
+            margin: 0 10px;
+        }
+        
+        .stage-5 .arrow {
+            color: white;
+        }
+        
+        .code-block {
+            background: rgba(0,0,0,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        
+        .stage-5 .code-block {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        .summary h3 {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+        
+        .key-terms {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .term {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .term-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        
+        .count {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">MongoDB Aggregation Pipeline Visualization</h1>
+        
+        <div class="pipeline-stage stage-1">
+            <div class="stage-header">
+                <span class="stage-number">1</span>
+                $match - Filter Documents
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> All Videos in Database
+                    <div class="code-block">
+[
+  { title: "React Tutorial", isPublished: true, owner: "123" },
+  { title: "Vue Guide", isPublished: false, owner: "456" },
+  { title: "Angular Basics", isPublished: true, owner: "789" },
+  { title: "React Advanced", isPublished: true, owner: "123" },
+  ... 996 more videos
+]
+                    </div>
+                    <span class="count">1000 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Filtered Videos
+                    <div class="code-block">
+[
+  { title: "React Tutorial", isPublished: true, owner: "123" },
+  { title: "React Advanced", isPublished: true, owner: "123" },
+  { title: "React Hooks", isPublished: true, owner: "123" },
+  ... 42 more matching videos
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> MongoDB scans all 1000 videos and keeps only those that match our criteria:
+            <br>• isPublished: true
+            <br>• title or description contains "react" (case-insensitive)
+            <br>• owner matches the specified userId</p>
+        </div>
+
+        <div class="pipeline-stage stage-2">
+            <div class="stage-header">
+                <span class="stage-number">2</span>
+                $lookup - Join with Users
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> Videos without user data
+                    <div class="code-block">
+[
+  { 
+    title: "React Tutorial", 
+    owner: ObjectId("123"),
+    // no user info
+  }
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Videos with user data
+                    <div class="code-block">
+[
+  { 
+    title: "React Tutorial", 
+    owner: ObjectId("123"),
+    ownerDetails: [
+      {
+        userName: "john_doe",
+        fullName: "John Doe",
+        avatar: "https://..."
+      }
+    ]
+  }
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> For each video, MongoDB looks up the user document in the "users" collection using the owner field. It's like doing a SQL JOIN. The user data is added as an array called "ownerDetails".</p>
+        </div>
+
+        <div class="pipeline-stage stage-3">
+            <div class="stage-header">
+                <span class="stage-number">3</span>
+                $unwind - Flatten Owner Array
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> Owner as Array
+                    <div class="code-block">
+{
+  title: "React Tutorial",
+  ownerDetails: [
+    {
+      userName: "john_doe",
+      fullName: "John Doe"
+    }
+  ]
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Owner as Object
+                    <div class="code-block">
+{
+  title: "React Tutorial",
+  ownerDetails: {
+    userName: "john_doe",
+    fullName: "John Doe"
+  }
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> $lookup always returns an array, even if there's only one match. $unwind converts the array into a single object, making it easier to work with. It's like "unwrapping" the array.</p>
+        </div>
+
+        <div class="pipeline-stage stage-4">
+            <div class="stage-header">
+                <span class="stage-number">4</span>
+                $addFields - Add Computed Fields
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> Original duration in seconds
+                    <div class="code-block">
+{
+  title: "React Tutorial",
+  duration: 1800,  // seconds
+  views: 1500
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> With computed fields
+                    <div class="code-block">
+{
+  title: "React Tutorial",
+  duration: 30,        // minutes
+  views: 1500,
+  viewsCount: 1500     // new field
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> MongoDB calculates new fields based on existing data:
+            <br>• duration: converts seconds to minutes (1800 ÷ 60 = 30)
+            <br>• viewsCount: creates a safe field with 0 if views is null</p>
+        </div>
+
+        <div class="pipeline-stage stage-5">
+            <div class="stage-header">
+                <span class="stage-number">5</span>
+                $project - Select Specific Fields
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> All fields in document
+                    <div class="code-block">
+{
+  _id: ObjectId("..."),
+  title: "React Tutorial",
+  description: "Learn React...",
+  thumbnail: "https://...",
+  videoFile: "https://...",
+  duration: 30,
+  viewsCount: 1500,
+  isPublished: true,
+  tags: ["react", "tutorial"],
+  ownerDetails: { ... },
+  createdAt: "2024-01-15",
+  updatedAt: "2024-01-15"
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Only selected fields
+                    <div class="code-block">
+{
+  _id: ObjectId("..."),
+  title: "React Tutorial",
+  description: "Learn React...",
+  thumbnail: "https://...",
+  videoFile: "https://...",
+  duration: 30,
+  viewsCount: 1500,
+  createdAt: "2024-01-15",
+  updatedAt: "2024-01-15",
+  ownerDetails: {
+    userName: "john_doe",
+    fullName: "John Doe",
+    avatar: "https://..."
+  }
+}
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> $project is like SELECT in SQL. It chooses which fields to include in the output. Fields not mentioned (like isPublished, tags) are excluded. This reduces data transfer and improves performance.</p>
+        </div>
+
+        <div class="pipeline-stage stage-6">
+            <div class="stage-header">
+                <span class="stage-number">6</span>
+                $sort - Sort Documents
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> Unsorted videos
+                    <div class="code-block">
+[
+  { title: "React Tutorial", createdAt: "2024-01-10" },
+  { title: "React Advanced", createdAt: "2024-01-15" },
+  { title: "React Hooks", createdAt: "2024-01-05" }
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Sorted videos (newest first)
+                    <div class="code-block">
+[
+  { title: "React Advanced", createdAt: "2024-01-15" },
+  { title: "React Tutorial", createdAt: "2024-01-10" },
+  { title: "React Hooks", createdAt: "2024-01-05" }
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> MongoDB sorts all 45 videos by createdAt in descending order (-1). This means newest videos appear first. The sort happens in memory and is very fast for this amount of data.</p>
+        </div>
+
+        <div class="pipeline-stage stage-7">
+            <div class="stage-header">
+                <span class="stage-number">7</span>
+                $facet - Split into Two Pipelines
+            </div>
+            <div class="data-flow">
+                <div class="data-box">
+                    <strong>Input:</strong> 45 sorted videos
+                    <div class="code-block">
+[
+  { title: "React Advanced", createdAt: "2024-01-15" },
+  { title: "React Tutorial", createdAt: "2024-01-10" },
+  { title: "React Hooks", createdAt: "2024-01-05" },
+  ... 42 more videos
+]
+                    </div>
+                    <span class="count">45 videos</span>
+                </div>
+                <div class="arrow">→</div>
+                <div class="data-box">
+                    <strong>Output:</strong> Two separate results
+                    <div class="code-block">
+{
+  videos: [
+    // Skip 20, take 10 (page 3)
+    { title: "Video 21", ... },
+    { title: "Video 22", ... },
+    ... 8 more videos
+  ],
+  totalCount: [
+    { count: 45 }
+  ]
+}
+                    </div>
+                    <div>
+                        <span class="count">10 videos</span>
+                        <span class="count">1 count</span>
+                    </div>
+                </div>
+            </div>
+            <p><strong>What happens:</strong> $facet runs two separate pipelines in parallel:
+            <br>• <strong>videos pipeline:</strong> Skips 20 videos and takes 10 (pagination)
+            <br>• <strong>totalCount pipeline:</strong> Counts all matching videos (45)
+            <br>This gives us both the page data and total count in one operation!</p>
+        </div>
+
+        <div class="summary">
+            <h3>🎯 Final Result Summary</h3>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+                <div><strong>videos.length:</strong> 10 items</div>
+                <div><strong>totalVideos:</strong> 45</div>
+                <div><strong>totalPages:</strong> 5</div>
+                <div><strong>currentPage:</strong> 3</div>
+            </div>
+        </div>
+
+        <div class="key-terms">
+            <h3>🔑 Key Terms Explained</h3>
+            
+            <div class="term">
+                <div class="term-name">Filter 1000 videos → 45 matching videos</div>
+                <div>Started with 1000 videos in database, but only 45 match our search criteria (published, contains "react", specific owner)</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Join with users → 45 videos with owner data</div>
+                <div>Each video has an owner field (user ID). We "join" this with the users collection to get the actual user information (name, avatar, etc.)</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Flatten owner array → 45 videos with owner object</div>
+                <div>$lookup returns an array even for single matches. $unwind converts [userObj] into just userObj for easier access</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Add computed fields → duration in minutes</div>
+                <div>Transform existing data: convert duration from seconds to minutes, add safe viewsCount field</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Select specific fields → selected fields only</div>
+                <div>Choose which fields to include in output (like SQL SELECT). Reduces data transfer and improves performance</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Sort by createdAt desc → 45 videos sorted</div>
+                <div>Arrange videos by creation date, newest first. This happens in memory and is very fast</div>
+            </div>
+            
+            <div class="term">
+                <div class="term-name">Split into pagination → videos: 10 items, totalCount: 45</div>
+                <div>$facet runs two operations in parallel: get page data (10 videos) and get total count (45) for pagination info</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
