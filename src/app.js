@@ -5,6 +5,7 @@ import cors from 'cors'
 import userRouter from '../routes/user.route.js'
 import videoRouter from '../routes/video.route.js'
 import tweetRouter from '../routes/tweet.route.js'
+import subscriptionRoute from '../routes/subscription.route.js'
 import multer from 'multer'
 
 const app = express()
@@ -37,6 +38,9 @@ app.use("/api/v1/videos", videoRouter)
 
 // tweet route
 app.use("/api/v1/tweets", tweetRouter)
+
+// subscription route
+app.use("/api/v1/subscription", subscriptionRoute)
 
 
 

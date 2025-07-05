@@ -3,3 +3,4 @@
 3. explore .populate in mongoose
 4. aggregation implementation
 5. insert like option in tweet
+6. implement forget password
