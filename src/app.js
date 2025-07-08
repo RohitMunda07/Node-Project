@@ -7,7 +7,8 @@ import {
     videoRouter,
     tweetRouter,
     subscriptionRoute,
-    playlistRouter
+    playlistRouter,
+    likeRouter
 } from '../routes/index.js'
 
 const app = express()
@@ -47,6 +48,8 @@ app.use("/api/v1/subscription", subscriptionRoute)
 // playlist route
 app.use("/api/v1/playlist", playlistRouter)
 
+// like route
+app.use("/api/v1/like", likeRouter)
 
 
 
