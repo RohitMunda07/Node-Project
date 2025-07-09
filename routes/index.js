@@ -4,6 +4,7 @@ import tweetRouter from '../routes/tweet.route.js'
 import subscriptionRoute from '../routes/subscription.route.js'
 import playlistRouter from '../routes/playlist.route.js'
 import likeRouter from '../routes/like.route.js'
+import commentRouter from '../routes/comment.route.js'
 
 export {
     userRouter,
@@ -11,5 +12,6 @@ export {
     tweetRouter,
     subscriptionRoute,
     playlistRouter,
-    likeRouter
+    likeRouter,
+    commentRouter
 }
